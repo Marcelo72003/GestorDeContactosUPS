@@ -45,7 +45,7 @@ public class personaDAO {
 			}
 		}
 	}
-	private void escribir(String texto){
+	public void escribir(String texto){
 		// Prepara el archivo para escribir en la última línea
 		FileWriter escribir;
 		try {
