@@ -3,6 +3,8 @@ package logica;
 import modelo.persona;
 import modelo.personaDAO;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +64,7 @@ public class ContactosServices {
                 return true;
             }
             return false;
-            //Arreglar excepcion
+          
         } catch (IOException e) {
             e.printStackTrace();
             return false;
@@ -72,9 +74,22 @@ public class ContactosServices {
     // Exportar contactos a un archivo CSV
     public boolean exportarContactosCSV() {
         try {
-            for (persona p : contactos) {
-                dao.escribir(p.datosContacto());
+            // Verificamos si el archivo existe y si está listo para escribir
+            File archivoExportado = new File("c:/gestionContactos/datosContactos.csv");
+            if (!archivoExportado.exists()) {
+                archivoExportado.createNewFile();  // Si no existe, lo creamos
             }
+
+            // Abrimos el archivo en modo append para agregar los datos
+            FileWriter writer = new FileWriter(archivoExportado, true);
+            
+            // Escribimos los contactos en el archivo
+            for (persona p : contactos) {
+                writer.write(p.datosContacto() + "\n");
+            }
+
+            // Cerramos el archivo después de escribir
+            writer.close();
             return true;
         } catch (IOException e) {
             System.err.println("Error al intentar guardar los contactos: " + e.getMessage());
