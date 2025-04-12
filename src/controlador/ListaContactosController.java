@@ -14,54 +14,87 @@ import java.util.stream.Collectors;
 public class ListaContactosController implements ActionListener {
     private final PanelListaContactos panel;
     private final ContactosServices servicio;
+    private final JMenuItem itemOrdenarAZ; // Nueva opción del menú contextual
 
-    // Constructor que recibe la vista del panel y el servicio
     public ListaContactosController(PanelListaContactos panel, ContactosServices servicio) {
         this.panel = panel;
         this.servicio = servicio;
 
-        // Inicialización de los eventos
         panel.getBtnExportar().addActionListener(this);
         panel.getTxtBuscar().addActionListener(this);
+        panel.getBtnActualizar().addActionListener(this);
 
-        // Cargar la lista de contactos cuando inicie el controlador
+        // Agregamos la nueva opción al menú contextual
+        itemOrdenarAZ = new JMenuItem("Ordenar A-Z");
+        panel.getTablaContactos().getComponentPopupMenu().add(itemOrdenarAZ);
+        itemOrdenarAZ.addActionListener(e -> ordenarAlfabeticamente());
+
+        actualizarTabla();
+    }
+
+    public void actualizarTabla() {
         cargarTablaContactos(servicio.obtenerTodos());
     }
 
-    // Acción a ejecutar cuando se hace clic en los botones
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == panel.getBtnExportar()) {
-            // Llamar al método de servicio para exportar contactos a CSV
+        Object src = e.getSource();
+
+        if (src == panel.getBtnExportar()) {
+            simularCarga();
             boolean exito = servicio.exportarContactosCSV();
             String mensaje = exito ? "Contactos exportados correctamente." : "Error al exportar contactos.";
             JOptionPane.showMessageDialog(panel, mensaje);
-        } else if (e.getSource() == panel.getTxtBuscar()) {
-            // Filtrar los contactos por el nombre introducido en el campo de búsqueda
+        } else if (src == panel.getTxtBuscar()) {
             String filtro = panel.getTxtBuscar().getText();
             List<persona> filtrados = servicio.obtenerTodos().stream()
                     .filter(p -> p.getNombre().toLowerCase().contains(filtro.toLowerCase()))
                     .collect(Collectors.toList());
-            cargarTablaContactos(filtrados); // Recargar la tabla con los contactos filtrados
+            cargarTablaContactos(filtrados);
+        } else if (src == panel.getBtnActualizar()) {
+            simularCarga();
+            actualizarTabla();
         }
     }
 
-    // Método para cargar los contactos en la tabla
+    private void ordenarAlfabeticamente() {
+        List<persona> ordenados = servicio.obtenerOrdenadosPorNombre();
+        cargarTablaContactos(ordenados);
+    }
+
     private void cargarTablaContactos(List<persona> contactos) {
         DefaultTableModel modelo = new DefaultTableModel(new String[]{"Nombre", "Teléfono", "Email", "Categoría", "Favorito"}, 0);
-
-        // Llenar la tabla con los contactos
         for (persona p : contactos) {
-            modelo.addRow(new Object[]{
-                    p.getNombre(),
-                    p.getTelefono(),
-                    p.getEmail(),
-                    p.getCategoria(),
-                    p.isFavorito() ? "Sí" : "No"
-            });
+            if (p.getNombre() != null && !p.getNombre().trim().isEmpty()) {
+                modelo.addRow(new Object[]{
+                        p.getNombre(),
+                        p.getTelefono(),
+                        p.getEmail(),
+                        p.getCategoria(),
+                        p.isFavorito() ? "Sí" : "No"
+                });
+            }
         }
-
-        // Establecer el modelo en la tabla
         panel.getTablaContactos().setModel(modelo);
     }
+
+    private void simularCarga() {
+        JProgressBar barra = panel.getProgressBar();
+        barra.setValue(0);
+        Timer timer = new Timer(20, null);
+        timer.addActionListener(new ActionListener() {
+            int progreso = 0;
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                progreso += 5;
+                barra.setValue(progreso);
+                if (progreso >= 100) {
+                    timer.stop();
+                    barra.setValue(0);
+                }
+            }
+        });
+        timer.start();
+    }
 }
+

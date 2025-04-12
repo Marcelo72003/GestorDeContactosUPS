@@ -1,8 +1,12 @@
 package controlador;
 
-import logica.ContactosServices;  // Servicios donde se gestionan los contactos
-import modelo.persona;  // Modelo de los datos de contacto
-import vista.NuevoContacto;  // Vista donde se agrega un nuevo contacto
+import logica.ContactosServices;
+import logica.EstadisticasService;
+import modelo.persona;
+import vista.NuevoContacto;
+import vista.PanelListaContactos;
+import vista.VentanaPrincipal;
+import vista.PanelEstadisticas;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -11,15 +15,16 @@ import java.awt.event.ActionListener;
 public class VentanaNuevoContactoController {
     private final NuevoContacto vista;
     private final ContactosServices servicio;
+    private final PanelListaContactos panelLista;  // <- Para actualizar tabla desde aquí
 
-    public VentanaNuevoContactoController(NuevoContacto vista, ContactosServices servicio) {
+    public VentanaNuevoContactoController(NuevoContacto vista, ContactosServices servicio, PanelListaContactos panelLista) {
         this.vista = vista;
         this.servicio = servicio;
+        this.panelLista = panelLista;
         inicializarEventos();
     }
 
     private void inicializarEventos() {
-        // Evento para agregar un contacto
         vista.getBtnAgregar().addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -27,7 +32,6 @@ public class VentanaNuevoContactoController {
             }
         });
 
-        // Evento para cancelar el formulario
         vista.getBtnCancelar().addActionListener(e -> vista.dispose());
     }
 
@@ -44,10 +48,23 @@ public class VentanaNuevoContactoController {
         }
 
         persona nuevo = new persona(nombre, telefono, email, categoria, favorito);
-        servicio.guardarContacto(nuevo);  // Usamos el método de servicio para agregar el contacto
+        servicio.guardarContacto(nuevo);
 
         JOptionPane.showMessageDialog(vista, "Contacto agregado correctamente.");
         vista.dispose();
+
+        // ✅ Refrescar la tabla de la lista de contactos si está presente
+        if (panelLista != null) {
+            new ListaContactosController(panelLista, servicio).actualizarTabla();
+        }
+
+        // ✅ Refrescar estadísticas automáticamente
+        JFrame ventanaPadre = (JFrame) SwingUtilities.getWindowAncestor(vista);
+        if (ventanaPadre instanceof VentanaPrincipal ventanaPrincipal) {
+            PanelEstadisticas panelEst = ventanaPrincipal.getPanelEstadisticas();
+            new EstadisticasController(panelEst, new EstadisticasService());
+        }
     }
 }
+
 

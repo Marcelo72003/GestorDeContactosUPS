@@ -72,14 +72,6 @@ public class PanelContactos extends JPanel {
         scrollLista.setBounds(30, 220, 940, 300);
         add(scrollLista);
 
-        JLabel lblBuscar = new JLabel("BUSCAR:");
-        lblBuscar.setBounds(30, 540, 100, 25);
-        add(lblBuscar);
-
-        txtBuscar = new JTextField();
-        txtBuscar.setBounds(140, 540, 830, 25);
-        add(txtBuscar);
-
         btnNuevoContacto = new JButton("NUEVO CONTACTO");
         btnNuevoContacto.setBounds(850, 10, 150, 25);
         add(btnNuevoContacto);

@@ -2,7 +2,9 @@ package controlador;
 
 import logica.ContactosServices;
 import modelo.persona;
+import vista.NuevoContacto;
 import vista.PanelContactos;
+import vista.PanelListaContactos;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -25,6 +27,8 @@ public class ContactoController implements ActionListener, ListSelectionListener
         this.panel.getBtnEliminar().addActionListener(this);
         this.panel.getBtnModificar().addActionListener(this);
         this.panel.getLstContactos().addListSelectionListener(this);
+        this.panel.getBtnNuevoContacto().addActionListener(e -> abrirVentanaNuevoContacto());
+
 
         // Actualizamos la lista de contactos
         actualizarLista();
@@ -107,6 +111,17 @@ public class ContactoController implements ActionListener, ListSelectionListener
             panel.getCmbCategoria().setSelectedItem(seleccionado.getCategoria());
             panel.getChbFavorito().setSelected(seleccionado.isFavorito());
         }
+    }
+    
+    private void abrirVentanaNuevoContacto() {
+        JFrame parent = (JFrame) SwingUtilities.getWindowAncestor(panel);
+        NuevoContacto dialogo = new NuevoContacto(parent);
+
+        PanelListaContactos panelLista = ((vista.VentanaPrincipal) parent).getPanelListaContactos();
+
+        new VentanaNuevoContactoController(dialogo, servicio, panelLista);
+        dialogo.setVisible(true);
+        actualizarLista(); 
     }
 }
 
