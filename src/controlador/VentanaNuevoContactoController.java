@@ -3,6 +3,7 @@ package controlador;
 import logica.ContactosServices;
 import logica.EstadisticasService;
 import modelo.persona;
+import util.DialogUtils;
 import vista.NuevoContacto;
 import vista.PanelListaContactos;
 import vista.VentanaPrincipal;
@@ -50,7 +51,9 @@ public class VentanaNuevoContactoController {
         persona nuevo = new persona(nombre, telefono, email, categoria, favorito);
         servicio.guardarContacto(nuevo);
 
-        JOptionPane.showMessageDialog(vista, "Contacto agregado correctamente.");
+     // Ahora:
+        DialogUtils.showInfo(vista, "Todos los campos deben ser llenados correctamente.");
+
         vista.dispose();
 
         // ✅ Refrescar la tabla de la lista de contactos si está presente

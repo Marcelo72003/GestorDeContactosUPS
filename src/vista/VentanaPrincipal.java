@@ -1,6 +1,8 @@
 package vista;
 
 import javax.swing.*;
+import java.awt.*;
+import util.Theme;
 
 public class VentanaPrincipal extends JFrame {
     private JTabbedPane pestañas;
@@ -13,39 +15,31 @@ public class VentanaPrincipal extends JFrame {
         setSize(1024, 720);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setLayout(null);
+        getContentPane().setBackground(Theme.BACKGROUND);
+        getContentPane().setLayout(new BorderLayout());
 
-        // Inicialización
         pestañas = new JTabbedPane();
-        pestañas.setBounds(0, 0, 1000, 680);
+        pestañas.setBackground(Theme.HEADER_BG);
+        pestañas.setForeground(Theme.TEXT_PRIMARY);
 
-        // Crear paneles
-        panelContactos = new PanelContactos();
+        panelContactos      = new PanelContactos();
         panelListaContactos = new PanelListaContactos();
-        panelEstadisticas = new PanelEstadisticas();
+        panelEstadisticas   = new PanelEstadisticas();
 
-        // Agregar pestañas
         pestañas.addTab("Contactos", panelContactos);
         pestañas.addTab("Lista de Contactos", panelListaContactos);
         pestañas.addTab("Estadísticas", panelEstadisticas);
 
-        add(pestañas);
+        add(pestañas, BorderLayout.CENTER);
     }
 
-    // Getters para acceder desde controladores
     public PanelContactos getPanelContactos() {
         return panelContactos;
     }
-
     public PanelListaContactos getPanelListaContactos() {
         return panelListaContactos;
     }
-
     public PanelEstadisticas getPanelEstadisticas() {
         return panelEstadisticas;
-    }
-
-    public JTabbedPane getPestañas() {
-        return pestañas;
     }
 }

@@ -2,19 +2,17 @@ package controlador;
 
 import logica.ContactosServices;
 import modelo.persona;
-import vista.PanelListaContactos;
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.util.List;
 import java.util.stream.Collectors;
+import vista.PanelListaContactos;
 
 public class ListaContactosController implements ActionListener {
     private final PanelListaContactos panel;
     private final ContactosServices servicio;
-    private final JMenuItem itemOrdenarAZ; // Nueva opción del menú contextual
+    private final JMenuItem ordenarAZ;
 
     public ListaContactosController(PanelListaContactos panel, ContactosServices servicio) {
         this.panel = panel;
@@ -24,77 +22,75 @@ public class ListaContactosController implements ActionListener {
         panel.getTxtBuscar().addActionListener(this);
         panel.getBtnActualizar().addActionListener(this);
 
-        // Agregamos la nueva opción al menú contextual
-        itemOrdenarAZ = new JMenuItem("Ordenar A-Z");
-        panel.getTablaContactos().getComponentPopupMenu().add(itemOrdenarAZ);
-        itemOrdenarAZ.addActionListener(e -> ordenarAlfabeticamente());
+        ordenarAZ = new JMenuItem("Ordenar A-Z");
+        panel.getTable().getComponentPopupMenu().add(ordenarAZ);
+        ordenarAZ.addActionListener(e -> ordenarAlfabeticamente());
 
         actualizarTabla();
     }
 
     public void actualizarTabla() {
-        cargarTablaContactos(servicio.obtenerTodos());
+        cargarTabla(servicio.obtenerTodos());
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        Object src = e.getSource();
-
-        if (src == panel.getBtnExportar()) {
+        if (e.getSource() == panel.getBtnExportar()) {
             simularCarga();
-            boolean exito = servicio.exportarContactosCSV();
-            String mensaje = exito ? "Contactos exportados correctamente." : "Error al exportar contactos.";
-            JOptionPane.showMessageDialog(panel, mensaje);
-        } else if (src == panel.getTxtBuscar()) {
-            String filtro = panel.getTxtBuscar().getText();
-            List<persona> filtrados = servicio.obtenerTodos().stream()
-                    .filter(p -> p.getNombre().toLowerCase().contains(filtro.toLowerCase()))
-                    .collect(Collectors.toList());
-            cargarTablaContactos(filtrados);
-        } else if (src == panel.getBtnActualizar()) {
+            boolean ok = servicio.exportarContactosCSV();
+            JOptionPane.showMessageDialog(panel,
+                ok ? "Contactos exportados." : "Error al exportar.",
+                "Exportar",
+                JOptionPane.INFORMATION_MESSAGE);
+        }
+        else if (e.getSource() == panel.getTxtBuscar()) {
+            String filtro = panel.getTxtBuscar().getText().toLowerCase();
+            List<persona> list = servicio.obtenerTodos().stream()
+                .filter(p -> p.getNombre().toLowerCase().contains(filtro))
+                .collect(Collectors.toList());
+            cargarTabla(list);
+        }
+        else if (e.getSource() == panel.getBtnActualizar()) {
             simularCarga();
             actualizarTabla();
         }
     }
 
     private void ordenarAlfabeticamente() {
-        List<persona> ordenados = servicio.obtenerOrdenadosPorNombre();
-        cargarTablaContactos(ordenados);
+        cargarTabla(servicio.obtenerOrdenadosPorNombre());
     }
 
-    private void cargarTablaContactos(List<persona> contactos) {
-        DefaultTableModel modelo = new DefaultTableModel(new String[]{"Nombre", "Teléfono", "Email", "Categoría", "Favorito"}, 0);
-        for (persona p : contactos) {
-            if (p.getNombre() != null && !p.getNombre().trim().isEmpty()) {
-                modelo.addRow(new Object[]{
-                        p.getNombre(),
-                        p.getTelefono(),
-                        p.getEmail(),
-                        p.getCategoria(),
-                        p.isFavorito() ? "Sí" : "No"
-                });
-            }
+    private void cargarTabla(List<persona> datos) {
+        DefaultTableModel m = new DefaultTableModel(
+            new String[]{"Nombre","Teléfono","Email","Categoría","Favorito"}, 0);
+        for (persona p : datos) {
+            m.addRow(new Object[]{
+                p.getNombre(),
+                p.getTelefono(),
+                p.getEmail(),
+                p.getCategoria(),
+                p.isFavorito() ? "Sí" : "No"
+            });
         }
-        panel.getTablaContactos().setModel(modelo);
+        panel.getTable().setModel(m);
     }
 
     private void simularCarga() {
-        JProgressBar barra = panel.getProgressBar();
-        barra.setValue(0);
-        Timer timer = new Timer(20, null);
-        timer.addActionListener(new ActionListener() {
-            int progreso = 0;
-            @Override
+        JProgressBar pb = panel.getProgressBar();
+        pb.setValue(0);
+        new Timer(20, new ActionListener() {
+            int pr = 0;
             public void actionPerformed(ActionEvent e) {
-                progreso += 5;
-                barra.setValue(progreso);
-                if (progreso >= 100) {
-                    timer.stop();
-                    barra.setValue(0);
+                pr += 5;
+                pb.setValue(pr);
+                if (pr >= 100) {
+                    ((Timer)e.getSource()).stop();
+                    pb.setValue(0);
                 }
             }
-        });
-        timer.start();
+        }).start();
     }
+   
+ 
 }
 

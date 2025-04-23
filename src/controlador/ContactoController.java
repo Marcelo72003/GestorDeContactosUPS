@@ -2,9 +2,12 @@ package controlador;
 
 import logica.ContactosServices;
 import modelo.persona;
+import util.DialogUtils;
+import vista.FormPanel;
 import vista.NuevoContacto;
 import vista.PanelContactos;
 import vista.PanelListaContactos;
+import vista.VentanaPrincipal;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -13,28 +16,27 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class ContactoController implements ActionListener, ListSelectionListener {
-
     private final PanelContactos panel;
     private final ContactosServices servicio;
 
-    // Constructor del controlador que conecta la vista con el servicio
     public ContactoController(PanelContactos panel, ContactosServices servicio) {
         this.panel = panel;
         this.servicio = servicio;
+        FormPanel f = panel.getFormPanel();
 
-        // Asociamos las acciones de los botones
-        this.panel.getBtnAgregar().addActionListener(this);
-        this.panel.getBtnEliminar().addActionListener(this);
-        this.panel.getBtnModificar().addActionListener(this);
-        this.panel.getLstContactos().addListSelectionListener(this);
-        this.panel.getBtnNuevoContacto().addActionListener(e -> abrirVentanaNuevoContacto());
+        // Conectar eventos de los botones del FormPanel
+        f.getBtnAgregar().addActionListener(this);
+        f.getBtnEliminar().addActionListener(this);
+        f.getBtnModificar().addActionListener(this);
+        f.getBtnNuevoContacto().addActionListener(e -> abrirVentanaNuevoContacto());
 
+        // Escucha selección en la lista
+        panel.getLstContactos().addListSelectionListener(this);
 
-        // Actualizamos la lista de contactos
+        // Inicializa la lista
         actualizarLista();
     }
 
-    // Método para actualizar la lista de contactos en la vista
     private void actualizarLista() {
         DefaultListModel<String> modelo = new DefaultListModel<>();
         for (persona p : servicio.obtenerTodos()) {
@@ -43,55 +45,52 @@ public class ContactoController implements ActionListener, ListSelectionListener
         panel.getLstContactos().setModel(modelo);
     }
 
-    // Limpiar los campos de la vista
     private void limpiarCampos() {
-        panel.getTxtNombres().setText("");
-        panel.getTxtTelefono().setText("");
-        panel.getTxtEmail().setText("");
-        panel.getCmbCategoria().setSelectedIndex(0);
-        panel.getChbFavorito().setSelected(false);
+        FormPanel f = panel.getFormPanel();
+        f.getTxtNombres().setText("");
+        f.getTxtTelefono().setText("");
+        f.getTxtEmail().setText("");
+        f.getCmbCategoria().setSelectedIndex(0);
+        f.getChbFavorito().setSelected(false);
     }
 
-    // Obtener la información del formulario para crear un nuevo contacto
     private persona obtenerDesdeFormulario() {
-        String nombre = panel.getTxtNombres().getText();
-        String telefono = panel.getTxtTelefono().getText();
-        String email = panel.getTxtEmail().getText();
-        String categoria = (String) panel.getCmbCategoria().getSelectedItem();
-        boolean favorito = panel.getChbFavorito().isSelected();
-
-        return new persona(nombre, telefono, email, categoria, favorito);
+        FormPanel f = panel.getFormPanel();
+        return new persona(
+            f.getTxtNombres().getText(),
+            f.getTxtTelefono().getText(),
+            f.getTxtEmail().getText(),
+            (String) f.getCmbCategoria().getSelectedItem(),
+            f.getChbFavorito().isSelected()
+        );
     }
 
-    // Método de respuesta a eventos de los botones
     @Override
     public void actionPerformed(ActionEvent e) {
-        Object src = e.getSource();
+        FormPanel f = panel.getFormPanel();
 
-        if (src == panel.getBtnAgregar()) {
+        if (e.getSource() == f.getBtnAgregar()) {
             persona nuevo = obtenerDesdeFormulario();
             if (servicio.agregar(nuevo)) {
-                JOptionPane.showMessageDialog(panel, "Contacto agregado exitosamente.");
+                DialogUtils.showInfo(panel, "Contacto agregado correctamente.");
                 actualizarLista();
                 limpiarCampos();
             }
         }
-
-        if (src == panel.getBtnEliminar()) {
-            int index = panel.getLstContactos().getSelectedIndex();
-            if (index != -1 && servicio.eliminar(index)) {
-                JOptionPane.showMessageDialog(panel, "Contacto eliminado.");
+        else if (e.getSource() == f.getBtnEliminar()) {
+            int idx = panel.getLstContactos().getSelectedIndex();
+            if (idx != -1 && servicio.eliminar(idx)) {
+                DialogUtils.showInfo(panel, "Contacto eliminado.");
                 actualizarLista();
                 limpiarCampos();
             }
         }
-
-        if (src == panel.getBtnModificar()) {
-            int index = panel.getLstContactos().getSelectedIndex();
-            if (index != -1) {
+        else if (e.getSource() == f.getBtnModificar()) {
+            int idx = panel.getLstContactos().getSelectedIndex();
+            if (idx != -1) {
                 persona actualizado = obtenerDesdeFormulario();
-                if (servicio.modificar(index, actualizado)) {
-                    JOptionPane.showMessageDialog(panel, "Contacto modificado.");
+                if (servicio.modificar(idx, actualizado)) {
+                    DialogUtils.showInfo(panel, "Contacto modificado.");
                     actualizarLista();
                     limpiarCampos();
                 }
@@ -99,30 +98,42 @@ public class ContactoController implements ActionListener, ListSelectionListener
         }
     }
 
-    // Método para manejar la selección de un contacto en la lista
     @Override
     public void valueChanged(ListSelectionEvent e) {
-        int index = panel.getLstContactos().getSelectedIndex();
-        if (index != -1) {
-            persona seleccionado = servicio.obtenerTodos().get(index);
-            panel.getTxtNombres().setText(seleccionado.getNombre());
-            panel.getTxtTelefono().setText(seleccionado.getTelefono());
-            panel.getTxtEmail().setText(seleccionado.getEmail());
-            panel.getCmbCategoria().setSelectedItem(seleccionado.getCategoria());
-            panel.getChbFavorito().setSelected(seleccionado.isFavorito());
+        int idx = panel.getLstContactos().getSelectedIndex();
+        if (idx != -1) {
+            persona sel = servicio.obtenerTodos().get(idx);
+            FormPanel f = panel.getFormPanel();
+            f.getTxtNombres().setText(sel.getNombre());
+            f.getTxtTelefono().setText(sel.getTelefono());
+            f.getTxtEmail().setText(sel.getEmail());
+            f.getCmbCategoria().setSelectedItem(sel.getCategoria());
+            f.getChbFavorito().setSelected(sel.isFavorito());
         }
     }
-    
+
+    /**
+     * Abre el diálogo de NuevoContacto y refresca la tabla de PanelListaContactos
+     * obteniéndolo del frame principal (VentanaPrincipal).
+     */
     private void abrirVentanaNuevoContacto() {
+        // Obtenemos el JFrame contenedor
         JFrame parent = (JFrame) SwingUtilities.getWindowAncestor(panel);
-        NuevoContacto dialogo = new NuevoContacto(parent);
+        NuevoContacto dlg = new NuevoContacto(parent);
 
-        PanelListaContactos panelLista = ((vista.VentanaPrincipal) parent).getPanelListaContactos();
+        // CORRECCIÓN: casteamos a VentanaPrincipal para obtener su PanelListaContactos
+        VentanaPrincipal vp = (VentanaPrincipal) parent;
+        PanelListaContactos panelLista = vp.getPanelListaContactos();
 
-        new VentanaNuevoContactoController(dialogo, servicio, panelLista);
-        dialogo.setVisible(true);
-        actualizarLista(); 
+        // Lanzamos el diálogo pasando la referencia correcta
+        new VentanaNuevoContactoController(dlg, servicio, panelLista);
+        dlg.setVisible(true);
+
+        // Al cerrarse, refrescamos la lista
+        actualizarLista();
     }
 }
+
+
 
 
