@@ -2,35 +2,62 @@ package vista;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.util.Locale;
 import util.Theme;
 import util.IconUtils;
+import util.IdiomaUtils;
 
 public class PanelContactos extends JPanel {
     private FormPanel formPanel;  // formulario encapsulado
     private JList<String> lstContactos;
     private JScrollPane scrollLista;
+    private JComboBox<String> cmbIdiomas;
 
     public PanelContactos() {
         setLayout(new BorderLayout());
         setBackground(Theme.BACKGROUND);
+        IdiomaUtils.cargarIdioma(new Locale("es", "ES")); // Idioma por defecto
         initComponents();
     }
 
     private void initComponents() {
+        // Panel superior que contiene el formPanel y el combo de idiomas
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBackground(Theme.BACKGROUND);
+
+        // Combo de selección de idioma
+        String[] idiomas = {"Español", "English", "Português"};
+        cmbIdiomas = new JComboBox<>(idiomas);
+        cmbIdiomas.setSelectedIndex(0);
+        cmbIdiomas.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent e) {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    Locale selected;
+                    switch (cmbIdiomas.getSelectedIndex()) {
+                        case 1: selected = new Locale("en", "US"); break;
+                        case 2: selected = new Locale("pt", "BR"); break;
+                        default: selected = new Locale("es", "ES");
+                    }
+                    IdiomaUtils.cargarIdioma(selected);
+                    actualizarTextos();
+                }
+            }
+        });
+
         // Se usa FormPanel para todos los controles del formulario
         formPanel = new FormPanel();
 
-        // Asignar íconos con texto a los botones principales
-        formPanel.getBtnAgregar().setIcon(IconUtils.loadIcon("add_user.png"));
-        formPanel.getBtnAgregar().setText("Agregar");
+        // Panel derecho para el combo de idioma
+        JPanel langPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        langPanel.setBackground(Theme.BACKGROUND);
+        langPanel.add(new JLabel("Idioma: "));
+        langPanel.add(cmbIdiomas);
 
-        formPanel.getBtnEliminar().setIcon(IconUtils.loadIcon("delete_user.png"));
-        formPanel.getBtnEliminar().setText("Eliminar");
-
-        formPanel.getBtnModificar().setIcon(IconUtils.loadIcon("edit_user.png"));
-        formPanel.getBtnModificar().setText("Modificar");
-
-        add(formPanel, BorderLayout.NORTH);
+        topPanel.add(formPanel, BorderLayout.CENTER);
+        topPanel.add(langPanel, BorderLayout.EAST);
+        add(topPanel, BorderLayout.NORTH);
 
         // Lista de contactos con padding
         lstContactos = new JList<>();
@@ -52,4 +79,10 @@ public class PanelContactos extends JPanel {
     public JButton getBtnNuevoContacto() { return formPanel.getBtnNuevoContacto(); }
     public JList<String> getLstContactos()   { return lstContactos; }
     public JScrollPane getScrollLista()      { return scrollLista; }
+
+    // Actualiza textos del formulario y combo
+    public void actualizarTextos() {
+        formPanel.actualizarTextos();
+        // El combo no necesita traducción dinámica porque solo tiene nombres visibles fijos
+    }
 }

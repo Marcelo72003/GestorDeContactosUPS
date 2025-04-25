@@ -1,7 +1,9 @@
 package run;
 
 import javax.swing.*;
+import java.util.Locale;
 import util.Theme;
+import util.IdiomaUtils;
 import vista.VentanaPrincipal;
 import controlador.ContactoController;
 import controlador.ListaContactosController;
@@ -18,6 +20,9 @@ public class Main {
         UIManager.put("Button.background", Theme.ACCENT);
         UIManager.put("Button.foreground", Theme.TEXT_PRIMARY);
 
+        // ✅ Cargar idioma por defecto (Español)
+        IdiomaUtils.cargarIdioma(new Locale("es", "ES"));
+
         SwingUtilities.invokeLater(() -> {
             VentanaPrincipal app = new VentanaPrincipal();
             ContactosServices cs = new ContactosServices();
@@ -29,3 +34,4 @@ public class Main {
         });
     }
 }
+
