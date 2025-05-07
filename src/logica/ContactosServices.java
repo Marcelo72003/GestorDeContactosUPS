@@ -1,3 +1,4 @@
+// ContactosServices.java
 package logica;
 
 import modelo.persona;
@@ -101,8 +102,6 @@ public class ContactosServices {
         }
     }
 
-    // ✅ NUEVOS MÉTODOS
-
     // Orden alfabético por nombre
     public List<persona> obtenerOrdenadosPorNombre() {
         return contactos.stream()
@@ -115,6 +114,11 @@ public class ContactosServices {
         return contactos.stream()
                 .filter(p -> p.getNombre().toLowerCase().startsWith(String.valueOf(letra).toLowerCase()))
                 .collect(Collectors.toList());
+    }
+
+    // Validar existencia por teléfono (para uso en hilo)
+    public boolean existeTelefono(String telefono) {
+        return contactos.stream().anyMatch(p -> p.getTelefono().equals(telefono));
     }
 }
 

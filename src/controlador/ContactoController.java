@@ -24,16 +24,13 @@ public class ContactoController implements ActionListener, ListSelectionListener
         this.servicio = servicio;
         FormPanel f = panel.getFormPanel();
 
-        // Conectar eventos de los botones del FormPanel
         f.getBtnAgregar().addActionListener(this);
         f.getBtnEliminar().addActionListener(this);
         f.getBtnModificar().addActionListener(this);
         f.getBtnNuevoContacto().addActionListener(e -> abrirVentanaNuevoContacto());
 
-        // Escucha selección en la lista
         panel.getLstContactos().addListSelectionListener(this);
 
-        // Inicializa la lista
         actualizarLista();
     }
 
@@ -68,24 +65,45 @@ public class ContactoController implements ActionListener, ListSelectionListener
     @Override
     public void actionPerformed(ActionEvent e) {
         FormPanel f = panel.getFormPanel();
-
         if (e.getSource() == f.getBtnAgregar()) {
             persona nuevo = obtenerDesdeFormulario();
-            if (servicio.agregar(nuevo)) {
-                DialogUtils.showInfo(panel, "Contacto agregado correctamente.");
-                actualizarLista();
-                limpiarCampos();
-            }
-        }
-        else if (e.getSource() == f.getBtnEliminar()) {
+         // Creación del hilo con SwingWorker para validar el número sin bloquear la interfaz
+            new SwingWorker<Boolean, Void>() {
+                @Override
+                protected Boolean doInBackground() {
+                    // Validación en segundo plano: verifica si el teléfono ya existe
+                    return servicio.existeTelefono(nuevo.getTelefono());
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        // Se obtiene el resultado de la validación
+                        boolean existe = get();
+                        if (existe) {
+                            DialogUtils.showWarning(panel, "El número ya está registrado.");
+                        } else {
+                            // Si no existe, se agrega el contacto
+                            if (servicio.agregar(nuevo)) {
+                                DialogUtils.showInfo(panel, "Contacto agregado correctamente.");
+                                actualizarLista();
+                                limpiarCampos();
+                            }
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        DialogUtils.showError(panel, "Error en la validación del contacto.");
+                    }
+                }
+            }.execute(); // Se lanza el hilo
+        } else if (e.getSource() == f.getBtnEliminar()) {
             int idx = panel.getLstContactos().getSelectedIndex();
             if (idx != -1 && servicio.eliminar(idx)) {
                 DialogUtils.showInfo(panel, "Contacto eliminado.");
                 actualizarLista();
                 limpiarCampos();
             }
-        }
-        else if (e.getSource() == f.getBtnModificar()) {
+        } else if (e.getSource() == f.getBtnModificar()) {
             int idx = panel.getLstContactos().getSelectedIndex();
             if (idx != -1) {
                 persona actualizado = obtenerDesdeFormulario();
@@ -112,24 +130,13 @@ public class ContactoController implements ActionListener, ListSelectionListener
         }
     }
 
-    /**
-     * Abre el diálogo de NuevoContacto y refresca la tabla de PanelListaContactos
-     * obteniéndolo del frame principal (VentanaPrincipal).
-     */
     private void abrirVentanaNuevoContacto() {
-        // Obtenemos el JFrame contenedor
         JFrame parent = (JFrame) SwingUtilities.getWindowAncestor(panel);
         NuevoContacto dlg = new NuevoContacto(parent);
-
-        // CORRECCIÓN: casteamos a VentanaPrincipal para obtener su PanelListaContactos
         VentanaPrincipal vp = (VentanaPrincipal) parent;
         PanelListaContactos panelLista = vp.getPanelListaContactos();
-
-        // Lanzamos el diálogo pasando la referencia correcta
         new VentanaNuevoContactoController(dlg, servicio, panelLista);
         dlg.setVisible(true);
-
-        // Al cerrarse, refrescamos la lista
         actualizarLista();
     }
 }
