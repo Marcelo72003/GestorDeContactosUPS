@@ -24,7 +24,7 @@ public class ListaContactosController implements ActionListener {
         panel.getBtnExportar().addActionListener(this);
         panel.getBtnActualizar().addActionListener(this);
 
-        // Búsqueda reactiva en segundo plano
+        // ✅ Búsqueda reactiva con SwingWorker para evitar congelamiento de interfaz
         panel.getTxtBuscar().getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { buscar(); }
             public void removeUpdate(DocumentEvent e) { buscar(); }
@@ -39,34 +39,38 @@ public class ListaContactosController implements ActionListener {
     }
 
     public void actualizarTabla() {
-        cargarTabla(servicio.obtenerTodos());
+        //Sincronización para acceder al recurso compartido "servicio"
+        synchronized (servicio) {
+            cargarTabla(servicio.obtenerTodos());
+        }
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == panel.getBtnExportar()) {
-            exportarEnSegundoPlano();
-        }
-        else if (e.getSource() == panel.getBtnActualizar()) {
+            exportarEnSegundoPlano(); // ✅ Exportación en hilo separado
+        } else if (e.getSource() == panel.getBtnActualizar()) {
             simularCarga();
             actualizarTabla();
         }
     }
 
     /**
-     * Realiza una búsqueda de contactos en segundo plano mientras el usuario escribe.
+     * ✅ Realiza una búsqueda de contactos en segundo plano mientras el usuario escribe.
      * Se utiliza SwingWorker para no bloquear la interfaz gráfica.
-     * El resultado se actualiza en la tabla una vez finalizado.
      */
     private void buscar() {
         String filtro = panel.getTxtBuscar().getText();
         new SwingWorker<List<persona>, Void>() {
             protected List<persona> doInBackground() {
-                return servicio.obtenerTodos().stream()
-                        .filter(p -> p.getNombre().toLowerCase().contains(filtro.toLowerCase())
-                                || p.getTelefono().contains(filtro)
-                                || p.getEmail().toLowerCase().contains(filtro.toLowerCase()))
-                        .toList();
+                // ✅ Bloque sincronizado para leer desde servicio sin conflictos
+                synchronized (servicio) {
+                    return servicio.obtenerTodos().stream()
+                            .filter(p -> p.getNombre().toLowerCase().contains(filtro.toLowerCase())
+                                    || p.getTelefono().contains(filtro)
+                                    || p.getEmail().toLowerCase().contains(filtro.toLowerCase()))
+                            .toList();
+                }
             }
             protected void done() {
                 try {
@@ -80,9 +84,8 @@ public class ListaContactosController implements ActionListener {
     }
 
     /**
-     * Exporta los contactos a CSV en segundo plano y muestra notificación.
-     * La barra de progreso se activa durante la operación.
-     * Se usa SwingWorker para evitar bloqueo de la interfaz.
+     * ✅ Exportación en segundo plano con SwingWorker para no bloquear la UI.
+     * Se sincroniza el acceso al servicio para evitar corrupción en escritura de archivo.
      */
     private void exportarEnSegundoPlano() {
         JProgressBar pb = panel.getProgressBar();
@@ -91,18 +94,19 @@ public class ListaContactosController implements ActionListener {
 
         new SwingWorker<Boolean, Void>() {
             protected Boolean doInBackground() {
-                return servicio.exportarContactosCSV();
+                synchronized (servicio) {
+                    return servicio.exportarContactosCSV();
+                }
             }
             protected void done() {
                 pb.setIndeterminate(false);
                 try {
                     boolean ok = get();
-                    //Se muestra notificación desde el hilo de evento con invokeLater
                     SwingUtilities.invokeLater(() -> {
                         JOptionPane.showMessageDialog(panel,
-                            ok ? "Contactos exportados con éxito." : "Error al exportar.",
-                            "Exportar",
-                            JOptionPane.INFORMATION_MESSAGE);
+                                ok ? "Contactos exportados." : "Error al exportar.",
+                                "Exportar",
+                                JOptionPane.INFORMATION_MESSAGE);
                     });
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -112,19 +116,21 @@ public class ListaContactosController implements ActionListener {
     }
 
     private void ordenarAlfabeticamente() {
-        cargarTabla(servicio.obtenerOrdenadosPorNombre());
+        synchronized (servicio) {
+            cargarTabla(servicio.obtenerOrdenadosPorNombre());
+        }
     }
 
     private void cargarTabla(List<persona> datos) {
         DefaultTableModel m = new DefaultTableModel(
-            new String[]{"Nombre","Teléfono","Email","Categoría","Favorito"}, 0);
+                new String[]{"Nombre", "Teléfono", "Email", "Categoría", "Favorito"}, 0);
         for (persona p : datos) {
             m.addRow(new Object[]{
-                p.getNombre(),
-                p.getTelefono(),
-                p.getEmail(),
-                p.getCategoria(),
-                p.isFavorito() ? "Sí" : "No"
+                    p.getNombre(),
+                    p.getTelefono(),
+                    p.getEmail(),
+                    p.getCategoria(),
+                    p.isFavorito() ? "Sí" : "No"
             });
         }
         panel.getTable().setModel(m);
@@ -135,16 +141,15 @@ public class ListaContactosController implements ActionListener {
         pb.setValue(0);
         new Timer(20, new ActionListener() {
             int pr = 0;
+
             public void actionPerformed(ActionEvent e) {
                 pr += 5;
                 pb.setValue(pr);
                 if (pr >= 100) {
-                    ((Timer)e.getSource()).stop();
+                    ((Timer) e.getSource()).stop();
                     pb.setValue(0);
                 }
             }
         }).start();
     }
 }
-
-
